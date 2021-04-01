@@ -203,6 +203,36 @@ services:
   #  networks:
   #    - elabftw-net
 
+  # example for ldap server + admin interface
+  # uncomment if you want to work on LDAP authentication
+  #ldap:
+  #    image: osixia/openldap:1.4.0
+  #    container_name: ldap
+  #    restart: always
+  #    hostname: example.org
+  #    environment:
+  #      - LDAP_TLS_VERIFY_CLIENT=try
+  #      - LDAP_OPENLDAP_UID=1000
+  #      - LDAP_OPENLDAP_GID=1000
+  #    ports:
+  #      - "389:389"
+  #      - "636:636"
+  #    volumes:
+  #      - /var/elabftw/ldap-data/ldap:/var/lib/ldap
+  #      - /var/elabftw/ldap-data/slapd.d:/etc/ldap/slapd.d
+  #    networks:
+  #        - elabftw-net
+  #ldapadmin:
+  #    image: osixia/phpldapadmin:0.9.0
+  #    container_name: ldapadmin
+  #    environment:
+  #      - PHPLDAPADMIN_LDAP_HOSTS=ldap
+  #    restart: always
+  #    ports:
+  #      - "6443:443"
+  #    networks:
+  #        - elabftw-net
+
 # the internal elabftw network
 networks:
   elabftw-net:
