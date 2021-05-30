@@ -6,7 +6,7 @@ ARG ELABFTW_VERSION=dev
 ENV ELABFTW_VERSION $ELABFTW_VERSION
 
 # this is versioning for the container image
-ARG ELABIMG_VERSION=2.4.0
+ARG ELABIMG_VERSION=2.4.1
 ENV ELABIMG_VERSION $ELABIMG_VERSION
 
 ARG S6_OVERLAY_VERSION=2.2.0.1
@@ -36,6 +36,7 @@ RUN apk upgrade -U -a && apk add --no-cache \
     git \
     openssl \
     nginx \
+    nginx-mod-http-brotli \
     openjdk11-jre \
     php8 \
     php8-curl \
