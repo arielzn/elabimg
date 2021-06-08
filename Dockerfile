@@ -96,6 +96,9 @@ EXPOSE 443
 
 # copy configuration and run script
 COPY ./src/nginx/ /etc/nginx/
+# ONLY ON DEV BRANCH: don't require brotli build step in dev
+RUN rm /etc/nginx/conf.d/brotli.conf
+# END ONLY ON DEV BRANCH
 COPY ./src/run.sh /run.sh
 COPY ./src/services /etc/services.d
 
