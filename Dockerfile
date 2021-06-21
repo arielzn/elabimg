@@ -88,15 +88,46 @@ RUN echo "$(curl -sS https://composer.github.io/installer.sig) -" > composer-set
 RUN /elabftw/composer.phar install --prefer-dist --no-progress --no-dev -a && yarn config set network-timeout 300000 && yarn install --pure-lockfile && yarn run buildall && rm -rf node_modules && yarn cache clean && /elabftw/composer.phar clear-cache
 
 # redirect nginx logs to stout and stderr
-RUN ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log
-
-# nginx will run on port 443
-EXPOSE 443
+RUN ln -sf /dev/stdout /var/log/nginx/access.log && ln -sf /dev/stderr /var/log/nginx/error.log && ln -sf /dev/stderr /var/log/php8/error.log 
 
 # copy configuration and run script
 COPY ./src/nginx/ /etc/nginx/
 COPY ./src/run.sh /run.sh
 COPY ./src/services /etc/services.d
+
+RUN mkdir -p /sessions /etc/nginx/certs /ssl /elabftw/uploads /elabftw/cache
+RUN chown nginx:nginx /sessions /etc/nginx/certs /ssl /elabftw/uploads /elabftw/cache
+
+##
+ENV PHP_CONFIGURATION_PATH=/etc/php8 \
+    PHP_SESSIONS_PATH=/sessions \
+    NGINX_SCRIPTS_PATH=/usr/share/nginx \
+    NGINX_ROOT=/etc/nginx \
+    ELABFTW_ROOT=/elabftw \
+    APP_SCRIPT=/run.sh \
+    APP_INIT_PATH=/etc/services.d
+
+# In order to drop the root user, we have to make some directories world
+# writeable as OpenShift default security model is to run the container under
+# random UID.
+RUN chmod -R a+rwX ${NGINX_ROOT} && \
+    chmod -R a+rwX ${ELABFTW_ROOT} && \
+    chmod -R a+rwX ${NGINX_SCRIPTS_PATH} && \
+    chmod -R a+rwX ${PHP_CONFIGURATION_PATH} && \
+    chmod -R a+rwX ${PHP_SESSIONS_PATH} && \
+    chmod -R a+rwX ${APP_SCRIPT} && \
+    chmod -R a+rwX ${APP_INIT_PATH}
+
+#    chown -R 1001:0 ${NGINX_ROOT} && \
+#    chown -R 1001:0 ${ELABFTW_ROOT} && \
+#    chown -R 1001:0 ${NGINX_SCRIPTS_PATH} && \
+#    chown -R 1001:0 ${APP_SCRIPT} && \
+#    chown -R 1001:0 ${APP_INIT_PATH}
+
+#USER 1001
+
+EXPOSE 8080
+EXPOSE 8443
 
 # this script checks if nginx is ok
 HEALTHCHECK --interval=2m --timeout=5s --retries=1 CMD sh /etc/nginx/healthcheck.sh

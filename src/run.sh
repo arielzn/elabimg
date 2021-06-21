@@ -31,14 +31,6 @@ getEnv() {
     elabftw_groupid=${ELABFTW_GROUPID:-101}
 }
 
-# Create user if not default user
-createUser() {
-    if [ "${elabftw_user}" != "nginx" ]; then
-        addgroup -g "${elabftw_groupid}" "${elabftw_group}"
-        adduser -S -u "${elabftw_userid}" -G "${elabftw_group}" "${elabftw_user}"
-    fi
-}
-
 # fullchain.pem and privkey.pem should be in a volume linked to /ssl
 generateCert() {
     if [ ! -f /etc/nginx/certs/server.crt ]; then
@@ -64,19 +56,19 @@ nginxConf() {
     # Switch http or https
     # false by default
     if ($disable_https); then
-        # activate an HTTP server listening on port 443
+        # activate an HTTP server listening on port 8080
         ln -fs /etc/nginx/http.conf /etc/nginx/conf.d/elabftw.conf
     else
-        mkdir -p /etc/nginx/certs
+        #mkdir -p /etc/nginx/certs
         # generate a selfsigned certificate if we don't use Let's Encrypt
         if (! $enable_letsencrypt); then
             generateCert
         fi
         sh /etc/nginx/generate-dhparam.sh
-        # activate an HTTPS server listening on port 443
+        # activate an HTTPS server listening on port 8443
         ln -fs /etc/nginx/https.conf /etc/nginx/conf.d/elabftw.conf
         if ($enable_letsencrypt); then
-            mkdir -p /ssl
+            #mkdir -p /ssl
             sed -i -e "s:CERT_PATH:/ssl/live/localhost/fullchain.pem:" /etc/nginx/conf.d/elabftw.conf
             sed -i -e "s:KEY_PATH:/ssl/live/localhost/privkey.pem:" /etc/nginx/conf.d/elabftw.conf
         else
@@ -88,7 +80,7 @@ nginxConf() {
     # works also for the ssl config if ssl is enabled
     sed -i -e "s/localhost/$server_name/g" /etc/nginx/conf.d/elabftw.conf
     # fix upload permissions
-    chown -R "${elabftw_user}":"${elabftw_group}" /var/lib/nginx
+    # chown -R "${elabftw_user}":"${elabftw_group}" /var/lib/nginx
     # remove the listen on IPv6 found in the default server conf file
     sed -i -e "s/listen \[::\]:80/#listen \[::\]:80/" /etc/nginx/conf.d/default.conf
 
@@ -169,9 +161,9 @@ phpConf() {
 
     # the sessions are stored in a separate dir
     sed -i -e "s:;session.save_path = \"/tmp\":session.save_path = \"/sessions\":" /etc/php8/php.ini
-    mkdir -p /sessions
-    chown "${elabftw_user}":"${elabftw_group}" /sessions
-    chmod 700 /sessions
+    #mkdir -p /sessions
+    #chown "${elabftw_user}":"${elabftw_group}" /sessions
+    #chmod 700 /sessions
     # disable url_fopen http://php.net/allow-url-fopen
     sed -i -e "s/allow_url_fopen = On/allow_url_fopen = Off/" /etc/php8/php.ini
     # enable opcache
@@ -190,11 +182,11 @@ phpConf() {
 
 }
 
-elabftwConf() {
-    mkdir -p /elabftw/uploads /elabftw/cache
-    chown "${elabftw_userid}":"${elabftw_groupid}" /elabftw/uploads /elabftw/cache
-    chmod 700 /elabftw/uploads /elabftw/cache
-}
+#elabftwConf() {
+    #mkdir -p /elabftw/uploads /elabftw/cache
+    #chown "${elabftw_userid}":"${elabftw_groupid}" /elabftw/uploads /elabftw/cache
+    #chmod 700 /elabftw/uploads /elabftw/cache
+#}
 
 writeConfigFile() {
     # write config file from env var
@@ -208,8 +200,8 @@ writeConfigFile() {
     define('DB_CERT_PATH', '${db_cert_path}');
     define('SECRET_KEY', '${secret_key}');"
     echo "$config" > "$config_path"
-    chown "${elabftw_user}":"${elabftw_group}" "$config_path"
-    chmod 600 "$config_path"
+    #chown "${elabftw_user}":"${elabftw_group}" "$config_path"
+    #chmod 600 "$config_path"
 }
 
 # because a global variable is not the best place for a secret value...
@@ -228,11 +220,10 @@ unsetEnv() {
 
 # script start
 getEnv
-createUser
 nginxConf
 phpfpmConf
 phpConf
-elabftwConf
+#elabftwConf
 writeConfigFile
 unsetEnv
 
